@@ -7,20 +7,24 @@ environment:
     - PYTHON: "C:\\Python34"
     - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
-    - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python33-x64"
-    - PYTHON: "C:\\Python34-x64"
-    - PYTHON: "C:\\Python35-x64"
-    - PYTHON: "C:\\Python36-x64"
+#    - PYTHON: "C:\\Python27-x64"
+#    - PYTHON: "C:\\Python33-x64"
+#    - PYTHON: "C:\\Python34-x64"
+#    - PYTHON: "C:\\Python35-x64"
+#    - PYTHON: "C:\\Python36-x64"
 
 install:
+  - cinst graphviz
+  - "%PYTHON%\\python.exe -m pip install pygraphviz \
+  --install-option=\"--include-path=C:\\Program Files (x86)\\Graphviz2.38\\include\" \
+  --install-option=\"--library-path=C:\\Program Files (x86)\\Graphviz2.38\\lib\\release\\lib\""
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
   - "%PYTHON%\\python.exe -m pip install -r requirements_test.txt"
 
 build: off
 
 test_script:
-  - "%PYTHON%\\python.exe -m nose --with-coverage --with-doctest"
+  - "%PYTHON%\\python.exe -m nose --with-doctest"
 
 #after_test:
 #  # This step builds your wheels.
