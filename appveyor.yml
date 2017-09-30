@@ -2,11 +2,12 @@ environment:
 
   matrix:
     # http://www.appveyor.com/docs/installed-software#python
+    # pygraphviz cannot be installed via pip with Python 3.X (Linking errors)
     - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python33"
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python35"
-    - PYTHON: "C:\\Python36"
+#    - PYTHON: "C:\\Python33"
+#    - PYTHON: "C:\\Python34"
+#    - PYTHON: "C:\\Python35"
+#    - PYTHON: "C:\\Python36"
 #    - PYTHON: "C:\\Python27-x64"
 #    - PYTHON: "C:\\Python33-x64"
 #    - PYTHON: "C:\\Python34-x64"

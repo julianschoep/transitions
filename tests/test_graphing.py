@@ -105,7 +105,8 @@ class TestDiagrams(TestCase):
             d.get_graph()
 
     def test_diagram(self):
-        m = self.machine_cls(states=self.states, transitions=self.transitions, initial='A', auto_transitions=False, title='a test')
+        m = self.machine_cls(states=self.states, transitions=self.transitions, initial='A',
+                             auto_transitions=False, title='a test')
         graph = m.get_graph()
         self.assertIsNotNone(graph)
         self.assertTrue("digraph" in str(graph))
@@ -186,6 +187,7 @@ class TestDiagrams(TestCase):
         m = self.machine_cls(states=['A', 'B', 'C'], initial='A')
         m.add_transition('to_state_A', 'B', 'A')
         m.add_transition('to_end', '*', 'C')
+        m.add_transition('to_same', 'C', 'C')
         e = m.get_graph().get_edge('B', 'A')
         self.assertEqual(e.attr['label'], 'to_state_A')
         e = m.get_graph().get_edge('A', 'C')
