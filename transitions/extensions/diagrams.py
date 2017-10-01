@@ -253,7 +253,11 @@ class NestedGraph(Graph):
                         edge = container.get_edge(src, dst)
                         edge.attr[label_pos] += ' | ' + edge_attr[label_pos]
                     else:
-                        container.add_edge(src, dst, **edge_attr)
+                        try:
+                            container.add_edge(src, dst, **edge_attr)
+                        except KeyError as e:
+                            logger.error("Could not add Edge from {0} to {1} to the graph".format(src, dst))
+                            raise e
 
         return events
 
