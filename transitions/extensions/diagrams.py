@@ -131,9 +131,9 @@ class Graph(Diagram):
                             logger.debug("Adding edge from {0} to {1} with attributes {2}".format(src, dst,
                                                                                                   str(edge_attr)))
                             container.add_edge(src, dst, **edge_attr)
-                        except KeyError as e:
-                            logger.error("Could not add edge from {0} to {1}".format(src, dst))
-                            raise e
+                        except KeyError:
+                            logger.error("Could not add edge from {0} to {1}. Adding without label.".format(src, dst))
+                            container.add_edge(src, dst)
 
     def _omit_auto_transitions(self, event, label):
         return self._is_auto_transition(event, label) and not self.machine.show_auto_transitions
