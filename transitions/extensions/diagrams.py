@@ -128,9 +128,9 @@ class Graph(Diagram):
                         edge.attr['label'] = edge.attr['label'] + ' | ' + edge_attr['label']
                     else:
                         try:
-                            container.add_edge(src, dst, **edge_attr)
+a                            container.add_edge(src, dst, **edge_attr)
                         except KeyError as e:
-                            logger.error("Could not add Edge from {0} to {1} to the graph".format(src, dst))
+                            logger.error("Could not add edge from {0} to {1}".format(src, dst))
                             raise e
 
     def _omit_auto_transitions(self, event, label):
@@ -258,9 +258,11 @@ class NestedGraph(Graph):
                         edge.attr[label_pos] += ' | ' + edge_attr[label_pos]
                     else:
                         try:
+                            logger.debug("Adding edge from {0} to {1} with attributes {2}".format(src, dst,
+                                                                                                  str(edge_attr)))
                             container.add_edge(src, dst, **edge_attr)
                         except KeyError as e:
-                            logger.error("Could not add Edge from {0} to {1} to the graph".format(src, dst))
+                            logger.error("Could not add edge from {0} to {1}".format(src, dst))
                             raise e
 
         return events
