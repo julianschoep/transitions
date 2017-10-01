@@ -127,7 +127,11 @@ class Graph(Diagram):
                         edge = container.get_edge(src, dst)
                         edge.attr['label'] = edge.attr['label'] + ' | ' + edge_attr['label']
                     else:
-                        container.add_edge(src, dst, **edge_attr)
+                        try:
+                            container.add_edge(src, dst, **edge_attr)
+                        except KeyError as e:
+                            logger.error("Could not add Edge from {0} to {1} to the graph".format(src, dst))
+                            raise e
 
     def _omit_auto_transitions(self, event, label):
         return self._is_auto_transition(event, label) and not self.machine.show_auto_transitions
