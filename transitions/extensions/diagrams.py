@@ -1,3 +1,10 @@
+"""
+    transitions.extensions.diagrams
+    -------------------------------
+
+    Graphviz support for (nested) machines. This also includes partial views of currently valid transitions.
+"""
+
 import abc
 
 from ..core import Machine
@@ -22,7 +29,7 @@ _super = super
 
 
 def rep(f):
-    """Return a string representation for `f`."""
+    """ Return a string representation for `f`. """
     if isinstance(f, string_types):
         return f
     try:
@@ -40,16 +47,28 @@ def rep(f):
 
 
 class Diagram(object):
+    """
+        Abstract base class for machine graph support. Objects of this base class should be able create
+        (A)Graphs. Their constructor gets the machine instance passed.
+    """
 
     def __init__(self, machine):
         self.machine = machine
 
     @abc.abstractmethod
     def get_graph(self):
+        """ Generates the (A)Graph and returns it. An already generated
+            graph has been assigned to the model instance and can be accessed directly.
+        """
         raise Exception('Abstract base Diagram.get_graph called!')
 
 
 class Graph(Diagram):
+    """ Graph creation for transitions.core.Machine.
+        Attributes:
+            machine_attributes (dict): Parameters for the general layout of the graph (flow direction, strict etc.)
+            style_attributes (dict): Contains style parameters for nodes, edges and the graph
+    """
 
     machine_attributes = {
         'directed': True,
@@ -177,6 +196,10 @@ class Graph(Diagram):
 
 
 class NestedGraph(Graph):
+    """ Graph creation support for transitions.extensions.nested.HierarchicalGraphMachine.
+        Attributes:
+            machine_attributes (dict): Same as Graph but extended with cluster/subgraph information
+    """
 
     machine_attributes = Graph.machine_attributes.copy()
     machine_attributes.update(
@@ -259,6 +282,9 @@ class NestedGraph(Graph):
 
 
 class TransitionGraphSupport(Transition):
+    """ Transition used in conjunction with (Nested)Graphs to update graphs whenever a transition is
+        conducted.
+    """
 
     def _change_state(self, event_data):
         machine = event_data.machine
@@ -266,7 +292,7 @@ class TransitionGraphSupport(Transition):
         dest = machine.get_state(self.dest)
 
         # Mark the active node
-        machine.reset_graph(model.graph)
+        machine.reset_graph_style(model.graph)
 
         # Mark the previous node and path used
         if self.source is not None:
@@ -290,6 +316,12 @@ class TransitionGraphSupport(Transition):
 
 
 class GraphMachine(Machine):
+    """ Extends transitions.core.Machine with graph support.
+        Is also used as a mixin for HierarchicalMachine.
+        Attributes:
+            _pickle_blacklist (list): Objects that should not/do not need to be pickled.
+            transition_cls (cls): TransitionGraphSupport
+    """
 
     _pickle_blacklist = ['graph']
     transition_cls = TransitionGraphSupport
@@ -348,28 +380,61 @@ class GraphMachine(Machine):
         return model.graph if not show_roi else self._graph_roi(model)
 
     def get_combined_graph(self, title=None, force_new=False, show_roi=False):
+        """ This method is currently equivalent to 'get_graph' of the first machine's model.
+        In future releases of transitions, this function will return a combined graph with active states
+        of all models.
+        Args:
+            title (str): Title of the resulting graph.
+            force_new (bool): If set to True, (re-)generate the model's graph.
+            show_roi (bool): If set to True, only render states that are active and/or can be reached from
+                the current state.
+        Returns: AGraph of the first machine's model.
+        """
         logger.info('Returning graph of the first model. In future releases, this ' +
                     'method will return a combined graph of all models.')
         return self._get_graph(self.models[0], title, force_new, show_roi)
 
     def set_edge_state(self, graph, edge_from, edge_to, state='default', label=None):
-        """ Mark a node as active by changing the attributes """
+        """ Retrieves/creates an edge between two states and changes the style/label.
+        Args:
+            graph (AGraph): The graph to be changed.
+            edge_from (str): Source state of the edge.
+            edge_to (str): Destination state of the edge.
+            state (str): Style name (Should be part of the node style_attributes in Graph)
+            label (str): Label of the edge.
+        """
+        # If show_auto_transitions is True, there will be an edge from 'edge_from' to 'edge_to'.
+        # This test is considered faster than always calling 'has_edge'.
         if not self.show_auto_transitions and not graph.has_edge(edge_from, edge_to):
             graph.add_edge(edge_from, edge_to, label)
         edge = graph.get_edge(edge_from, edge_to)
         self.set_edge_style(graph, edge, state)
 
     def add_states(self, *args, **kwargs):
+        """ Calls the base method and regenerates all models's graphs.
+        Args:
+            *args: Passed to base method.
+            **kwargs: Passed to base method.
+        """
         _super(GraphMachine, self).add_states(*args, **kwargs)
         for model in self.models:
             model.get_graph(force_new=True)
 
     def add_transition(self, *args, **kwargs):
+        """ Calls the base method and regenerates all models's graphs.
+        Args:
+            *args: Passed to base method.
+            **kwargs: Passed to base method.
+        """
         _super(GraphMachine, self).add_transition(*args, **kwargs)
         for model in self.models:
             model.get_graph(force_new=True)
 
-    def reset_graph(self, graph):
+    def reset_graph_style(self, graph):
+        """ This method resets the style of edges, nodes, and subgraphs to the 'default' parameters.
+        Args:
+            graph (AGraph): The graph to be reset.
+        """
         # Reset all the edges
         for e in graph.edges_iter():
             self.set_edge_style(graph, e, 'default')
@@ -380,12 +445,17 @@ class GraphMachine(Machine):
             self.set_graph_style(graph, g, 'default')
 
     def set_node_state(self, graph, node_name, state='default'):
+        """ Sets the style of a node or subgraph/cluster.
+        Args:
+            graph (AGraph): The graph to be altered.
+            node_name (str): Name of a node or cluster (without cluster_-prefix).
+            state (str): Style name (Should be part of the node style_attributes in Graph).
+        """
         if graph.has_node(node_name):
             node = graph.get_node(node_name)
             func = self.set_node_style
         else:
-            node = graph
-            node = _get_subgraph(node, 'cluster_' + node_name)
+            node = _get_subgraph(graph, 'cluster_' + node_name)
             func = self.set_graph_style
         func(graph, node, state)
 
@@ -422,22 +492,46 @@ class GraphMachine(Machine):
 
     @staticmethod
     def set_node_style(graph, node_name, style='default'):
+        """ Sets the style of a node.
+        Args:
+            graph (AGraph): Graph containing the relevant styling attributes.
+            node_name (str): Name of a node.
+            style (str): Style name (Should be part of the node style_attributes in Graph).
+        """
         node = graph.get_node(node_name)
         style_attr = graph.style_attributes.get('node', {}).get(style)
         node.attr.update(style_attr)
 
     @staticmethod
     def set_edge_style(graph, edge, style='default'):
+        """ Sets the style of an edge.
+        Args:
+            graph (AGraph): Graph containing the relevant styling attributes.
+            edge (Edge): Edge to be altered.
+            style (str): Style name (Should be part of the edge style_attributes in Graph).
+        """
         style_attr = graph.style_attributes.get('edge', {}).get(style)
         edge.attr.update(style_attr)
 
     @staticmethod
     def set_graph_style(graph, item, style='default'):
+        """ Sets the style of a (sub)graph/cluster.
+        Args:
+            graph (AGraph): Graph containing the relevant styling attributes.
+            item (AGraph): Item to be altered.
+            style (str): Style name (Should be part of the graph style_attributes in Graph).
+        """
         style_attr = graph.style_attributes.get('graph', {}).get(style)
         item.graph_attr.update(style_attr)
 
 
 def _get_subgraph(g, name):
+    """ Searches for subgraphs in a graph.
+    Args:
+        g (AGraph): Container to be searched.
+        name (str): Name of the cluster.
+    Returns: AGraph if a cluster called 'name' exists else None
+    """
     sg = g.get_subgraph(name)
     if sg:
         return sg
