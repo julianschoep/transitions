@@ -61,16 +61,20 @@ class Graph(Diagram):
     style_attributes = {
         'node': {
             'default': {
-                'shape': 'circle',
+                'shape': 'box',
                 'height': '1.2',
                 'style': 'filled',
                 'fillcolor': 'white',
                 'color': 'black',
+                'nojustify':'true'
             },
             'active': {
-                'color': 'red',
-                'fillcolor': 'darksalmon',
-                'shape': 'doublecircle'
+                'shape': 'box',
+                'height': '1.2',
+                'style': 'filled',
+                'fillcolor': 'white',
+                'color': 'black',
+                'nojustify':'true'
             },
             'previous': {
                 'color': 'blue',
